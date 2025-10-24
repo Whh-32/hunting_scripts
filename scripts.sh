@@ -11,6 +11,22 @@ END
     echo "$query" | psql -t -h crt.sh -p 5432 -U guest certwatch | sed 's/ //g' | grep --color=auto --exclude-dir={.bzr,CVS,.git,.hg,.svn,.idea,.tox} -E --color=auto --exclude-dir={.bzr,CVS,.git,.hg,.svn,.idea,.tox} ".*.\.$1" | sed 's/*\.//g' | tr '[:upper:]' '[:lower:]' | sort -u
 }
 
+get_ip_asn () {
+    input=""
+    while read line
+    do
+        curl -s https://api.bgpview.io/ip/$line | jq -r ".data.prefixes[0].asn.asn"
+    done < "${1:-/dev/stdin}"
+}
+
+get_asn_details () {
+    input=""
+    while read line
+    do
+        curl -s https://api.bgpview.io/asn/$line | jq -r ".data | {asn: .asn, name: .name, des: .description_short, email: .email_contacts}"
+    done < "${1:-/dev/stdin}"
+}
+
 httpx_full () {
         input="" 
         while read line
@@ -72,5 +88,3 @@ nice_katana () {
         echo "$line" | katana -js-crawl -jsluice -known-files all -automatic-form-fill -silent -crawl-scope $host -extension-filter json,js,fnt,ogg,css,jpg,jpeg,png,svg,img,gif,exe,mp4,flv,pdf,doc,ogv,webm,wmv,webp,mov,mp3,m4a,m4p,ppt,pptx,scss,tif,tiff,ttf,otf,woff,woff2,bmp,ico,eot,htc,swf,rtf,image,rf,txt,ml,ip | tee ${host}.katana
     done < "${1:-/dev/stdin}"
 }
-
-
