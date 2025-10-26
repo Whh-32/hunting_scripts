@@ -48,6 +48,31 @@ get_asn_details () {
     done < "${1:-/dev/stdin}"
 }
 
+get_asn_details_ip () {
+    input=""
+    while read line
+    do
+        curl -s https://api.bgpview.io/asn/$line/prefixes | jq -r ".data.ipv4_prefixes[0] | {prefix: .prefix, name: .description}"
+    done < "${1:-/dev/stdin}"
+}
+
+get_ip_prefix () {
+    input=""
+    while read line
+    do
+        curl -s https://api.bgpview.io/ip/$line | jq -r ".data.prefixes[0].asn.prefix"
+    done < "${1:-/dev/stdin}"
+}
+
+get_ptr () {
+    input=""
+    while read line && [[ "$line" != "END_OF_INPUT" ]]
+    do
+        input="$input$line\n"
+    done
+    echo $input | dnsx -silent -resp-only -ptr
+}
+
 httpx_full () {
         input="" 
         while read line
