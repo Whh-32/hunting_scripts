@@ -57,38 +57,41 @@ httpx_full () {
 }
 
 dns_wordlist() {
-  local A="best-dns-wordlist.txt"
-  local B="2m-subdomains.txt"
-  local CRUNCH_OUT="4.txt"
-  local MERGED="merged-wordlist.txt"
-  local CHARSET="abcdefghijklmnopqrstuvwxyz1234567890"
-
-  # --- Downloading wordlists (background) ---
   (
-    curl -sS https://wordlists-cdn.assetnote.io/data/manual/best-dns-wordlist.txt -o "$A"
-    curl -sS https://wordlists-cdn.assetnote.io/data/manual/2m-subdomains.txt -o "$B"
-  ) &
-  sniper "$!" "Downloading wordlists..."
+    set +m
+    local A="best-dns-wordlist.txt"
+    local B="2m-subdomains.txt"
+    local CRUNCH_OUT="4.txt"
+    local MERGED="merged-wordlist.txt"
+    local CHARSET="abcdefghijklmnopqrstuvwxyz1234567890"
 
-  # ensure crunch exists
-  if ! command -v crunch >/dev/null 2>&1; then
-    echo "ERROR: crunch not found in PATH. Install crunch and re-run." >&2
-  fi
+    # --- Downloading wordlists (background) ---
+    (
+      curl -sS https://wordlists-cdn.assetnote.io/data/manual/best-dns-wordlist.txt -o "$A"
+      curl -sS https://wordlists-cdn.assetnote.io/data/manual/2m-subdomains.txt -o "$B"
+    ) &
+    sniper "$!" "Downloading wordlists..."
 
-  # --- Generating crunch output (background) ---
-  (
-    crunch 1 4 "$CHARSET" -o "$CRUNCH_OUT" >/dev/null 2>&1
-  ) &
-  sniper "$!" "Generating crunch 1–4 with charset: $CHARSET"
+    # ensure crunch exists
+    if ! command -v crunch >/dev/null 2>&1; then
+      echo "ERROR: crunch not found in PATH. Install crunch and re-run." >&2
+    fi
 
-  # --- Merging files (background) ---
-  (
-    cat "$A" "$B" "$CRUNCH_OUT" | sort -u > "$MERGED"
-  ) &
-  sniper "$!" "Merging files into $MERGED"
+    # --- Generating crunch output (background) ---
+    (
+      crunch 1 4 "$CHARSET" -o "$CRUNCH_OUT" >/dev/null 2>&1
+    ) &
+    sniper "$!" "Generating crunch 1–4 with charset: $CHARSET"
 
-  echo
-  echo "[+] Done. Output saved to: $MERGED"
+    # --- Merging files (background) ---
+    (
+      cat "$A" "$B" "$CRUNCH_OUT" | sort -u > "$MERGED"
+    ) &
+    sniper "$!" "Merging files into $MERGED"
+
+    echo
+    echo "[+] Done. Output saved to: $MERGED"
+  )
 }
 
 dns_brute_full () {
