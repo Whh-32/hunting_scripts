@@ -1,3 +1,20 @@
+#!/usr/bin/env bash
+
+sniper() {
+  local pid=$1
+  local msg="$2"
+  local spin=('+' 'x' '*' '•' '×')
+  local i=0
+  tput civis
+  while kill -0 "$pid" 2>/dev/null; do
+    printf "\r[%s] %s" "${spin[i]}" "$msg"
+    i=$(( (i+1) % ${#spin[@]} ))
+    sleep 0.1
+  done
+  printf "\r[+] %s\n" "$msg"
+  tput cnorm
+}
+
 crtsh () {
     query=$(cat <<-END
         SELECT
@@ -39,55 +56,39 @@ httpx_full () {
         done < "${1:-/dev/stdin}"
 }
 
-dns_brut_wordlist() {
-    set - euo pipefail
+dns_wordlist() {
+  local A="best-dns-wordlist.txt"
+  local B="2m-subdomains.txt"
+  local CRUNCH_OUT="4.txt"
+  local MERGED="merged-wordlist.txt"
+  local CHARSET="abcdefghijklmnopqrstuvwxyz1234567890"
 
-# Files
-    A = "best-dns-wordlist.txt"
-    B = "2m-subdomains.txt"
-    CRUNCH_OUT = "4.txt"
-    MERGED = "merged-wordlist.txt"
+  # --- Downloading wordlists (background) ---
+  (
+    curl -sS https://wordlists-cdn.assetnote.io/data/manual/best-dns-wordlist.txt -o "$A"
+    curl -sS https://wordlists-cdn.assetnote.io/data/manual/2m-subdomains.txt -o "$B"
+  ) &
+  sniper "$!" "Downloading wordlists..."
 
-# Charset for crunch
-CHARSET = "abcdefghijklmnopqrstuvwxyz1234567890"
+  # ensure crunch exists
+  if ! command -v crunch >/dev/null 2>&1; then
+    echo "ERROR: crunch not found in PATH. Install crunch and re-run." >&2
+  fi
 
-# -- - Sniper animation function ---
-        sniper() {
-    local pid = $1
-    local spin = ('+' 'x' '*' '•' '×')
-    local i = 0
-    tput civis
-        while kill - 0 "$pid" 2 > /dev/null; do
-        printf "\r[%s] %s" "${spin[i]}" "$2"
-        i = $(((i + 1) % ${ #spin[@] }))
-        sleep 0.1
-        done
-    printf "\r[+] %s\n" "$2"
-    tput cnorm
-    }
+  # --- Generating crunch output (background) ---
+  (
+    crunch 1 4 "$CHARSET" -o "$CRUNCH_OUT" >/dev/null 2>&1
+  ) &
+  sniper "$!" "Generating crunch 1–4 with charset: $CHARSET"
 
-# -- - Downloading wordlists-- -
-        (
-            curl - s https://wordlists-cdn.assetnote.io/data/manual/best-dns-wordlist.txt -o "$A"
-    curl - s https://wordlists-cdn.assetnote.io/data/manual/2m-subdomains.txt -o "$B"
-) &
-        sniper $! "Downloading wordlists..."
+  # --- Merging files (background) ---
+  (
+    cat "$A" "$B" "$CRUNCH_OUT" | sort -u > "$MERGED"
+  ) &
+  sniper "$!" "Merging files into $MERGED"
 
-# -- - Generating crunch output-- -
-if !command - v crunch > /dev/null 2 >& 1; then
-    echo "ERROR: crunch not found in PATH. Install crunch and re-run." >& 2
-    exit 2
-    fi
-
-        (crunch 1 4 "$CHARSET" - o "$CRUNCH_OUT" > /dev/null 2 >& 1) &
-        sniper $! "Generating crunch 1–4 with charset: $CHARSET"
-
-# -- - Merging files-- -
-        (cat "$A" "$B" "$CRUNCH_OUT" | sort - u > "$MERGED" ) &
-            sniper $! "Merging files into $MERGED"
-
-    echo
-echo "[+] Done. Output saved to: $MERGED"
+  echo
+  echo "[+] Done. Output saved to: $MERGED"
 }
 
 dns_brute_full () {
