@@ -130,7 +130,7 @@ dns_brute_full () {
         rm -f "$1.wordlist $1.dns_brute $1.dns_gen"
         
         echo "making static wordlist..."
-        awk -v domain="$1" '{print $0"."domain}' "./wordlist/merged-wordlist.txt.txt" >> "$1.wordlist"
+        awk -v domain="$1" '{print $0"."domain}' "./wordlist/merged-wordlist.txt" >> "$1.wordlist"
         
         echo "shuffledns static brute-force..."
         shuffledns -list $1.wordlist -d $1 -r ~/.resolvers -m $(which massdns) -mode resolve -t 30 -silent | tee $1.dns_brute 2>&1 > /dev/null
