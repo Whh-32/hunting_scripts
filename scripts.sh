@@ -129,7 +129,7 @@ dns_brute_full () {
     (
         set +m
         (
-          rm -f "$1.wordlist $1.dns_brute $1.dns_gen"
+          rm -rf $1.*
         ) &
         sniper "$!" "cleaning..."
         
@@ -151,7 +151,7 @@ dns_brute_full () {
         sniper "$!" "running subfinder..."
           
         (
-          cat $1.dns_brute | dnsgen -w ./wordlist/dynamic.txt - > $1.dns_gen 2>&1 > /dev/null
+          cat $1.dns_brute | dnsgen -w wordlist/dynamic.txt - > $1.dns_gen
           echo "[+] finished with $(wc -l $1.dns_gen) words."
         ) &
         sniper "$!" "running DNSGen..."
